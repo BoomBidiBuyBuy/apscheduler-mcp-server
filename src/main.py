@@ -1,7 +1,17 @@
 from fastmcp import FastMCP
+import logging
 
 import envs
 from scheduler import scheduler
+
+# In a real app, you might configure this in your main entry point
+logging.basicConfig(
+    level=logging.DEBUG,
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+)
+
+# Get a logger for the module where the client is used
+logger = logging.getLogger(__name__)
 
 
 mcp = FastMCP(
