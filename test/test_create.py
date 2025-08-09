@@ -1,4 +1,3 @@
-
 from datetime import datetime
 
 from fastmcp import Client
@@ -8,18 +7,20 @@ from src.main import mcp_server
 
 
 class TestCreate:
-
     async def test_schedule_once_at_date(self, mocker):
-        add_job_mock = mocker.patch("src.main.scheduler.add_job", return_value=mocker.Mock(id="job_123"))
+        add_job_mock = mocker.patch(
+            "src.main.scheduler.add_job", return_value=mocker.Mock(id="job_123")
+        )
 
         async with Client(mcp_server) as client:
-            result = await client.call_tool("schedule_tool_call_once_at_date",
+            result = await client.call_tool(
+                "schedule_tool_call_once_at_date",
                 arguments={
                     "mcp_endpoint": "http://localhost:8000",
                     "mcp_tool_name": "test_tool",
                     "mcp_tool_args": {"arg1": "value1"},
-                    "run_date": "2025-01-01 12:00:00" 
-                }
+                    "run_date": "2025-01-01 12:00:00",
+                },
             )
 
             assert result.content[0].text == "job_123"
@@ -31,15 +32,18 @@ class TestCreate:
                 kwargs={
                     "mcp_endpoint": "http://localhost:8000",
                     "mcp_tool_name": "test_tool",
-                    "mcp_tool_args": {"arg1": "value1"}
-                }
+                    "mcp_tool_args": {"arg1": "value1"},
+                },
             )
 
     async def test_schedule_at_interval(self, mocker):
-        add_job_mock = mocker.patch("src.main.scheduler.add_job", return_value=mocker.Mock(id="job_123"))
+        add_job_mock = mocker.patch(
+            "src.main.scheduler.add_job", return_value=mocker.Mock(id="job_123")
+        )
 
         async with Client(mcp_server) as client:
-            result = await client.call_tool("schedule_tool_call_at_interval",
+            result = await client.call_tool(
+                "schedule_tool_call_at_interval",
                 arguments={
                     "mcp_endpoint": "http://localhost:8000",
                     "mcp_tool_name": "test_tool",
@@ -51,8 +55,8 @@ class TestCreate:
                     "seconds": 5,
                     "start_date": "2025-01-01",
                     "end_date": "2025-01-02",
-                    "timezone": "UTC"
-                }
+                    "timezone": "UTC",
+                },
             )
 
             assert result.content[0].text == "job_123"
@@ -71,15 +75,18 @@ class TestCreate:
                 kwargs={
                     "mcp_endpoint": "http://localhost:8000",
                     "mcp_tool_name": "test_tool",
-                    "mcp_tool_args": {"arg1": "value1"}
-                }
+                    "mcp_tool_args": {"arg1": "value1"},
+                },
             )
-    
+
     async def test_schedule_by_cron(self, mocker):
-        add_job_mock = mocker.patch("src.main.scheduler.add_job", return_value=mocker.Mock(id="job_123"))
+        add_job_mock = mocker.patch(
+            "src.main.scheduler.add_job", return_value=mocker.Mock(id="job_123")
+        )
 
         async with Client(mcp_server) as client:
-            result = await client.call_tool("schedule_tool_call_by_cron",
+            result = await client.call_tool(
+                "schedule_tool_call_by_cron",
                 arguments={
                     "mcp_endpoint": "http://localhost:8000",
                     "mcp_tool_name": "test_tool",
@@ -94,8 +101,8 @@ class TestCreate:
                     "second": "0",
                     "start_date": "2025-01-01",
                     "end_date": "2025-01-02",
-                    "timezone": "UTC"
-                }
+                    "timezone": "UTC",
+                },
             )
 
             assert result.content[0].text == "job_123"
@@ -117,6 +124,6 @@ class TestCreate:
                 kwargs={
                     "mcp_endpoint": "http://localhost:8000",
                     "mcp_tool_name": "test_tool",
-                    "mcp_tool_args": {"arg1": "value1"}
-                }
+                    "mcp_tool_args": {"arg1": "value1"},
+                },
             )

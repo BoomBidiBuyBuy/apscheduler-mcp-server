@@ -13,8 +13,7 @@ from apscheduler.schedulers.asyncio import AsyncIOScheduler
 
 # In a real app, you might configure this in your main entry point
 logging.basicConfig(
-    level=logging.DEBUG,
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+    level=logging.DEBUG, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
 )
 
 # Get a logger for the module where the client is used
@@ -91,13 +90,13 @@ def schedule_tool_call_by_cron(
     if month is not None:
         cron_params["month"] = month
     if day is not None:
-        cron_params["day"] = day 
+        cron_params["day"] = day
     if week is not None:
         cron_params["week"] = week
     if day_of_week is not None:
         cron_params["day_of_week"] = day_of_week
     if hour is not None:
-        cron_params["hour"] = hour   
+        cron_params["hour"] = hour
     if minute is not None:
         cron_params["minute"] = minute
     if second is not None:
@@ -116,8 +115,8 @@ def schedule_tool_call_by_cron(
         kwargs={
             "mcp_endpoint": mcp_endpoint,
             "mcp_tool_name": mcp_tool_name,
-            "mcp_tool_args": mcp_tool_args
-        }
+            "mcp_tool_args": mcp_tool_args,
+        },
     )
 
     return job.id
@@ -135,7 +134,7 @@ def schedule_tool_call_at_interval(
     seconds: int = None,
     start_date: str = None,
     end_date: str = None,
-    timezone: str = None
+    timezone: str = None,
 ) -> str:
     """
     Schedule remote MCP call on specified intervals, starting on `start_date` if specified,
@@ -148,7 +147,7 @@ def schedule_tool_call_at_interval(
         weeks: number of weeks to wait
         days: number of days to wait
         hours: number of hours to wait
-        minutes: number of minutes to wait 
+        minutes: number of minutes to wait
         seconds: number of seconds to wait
         start_date: the date/time to start the job at in "%Y-%m-%d" format
         end_date: the date/time to end the job at in "%Y-%m-%d" format
@@ -183,8 +182,8 @@ def schedule_tool_call_at_interval(
         kwargs={
             "mcp_endpoint": mcp_endpoint,
             "mcp_tool_name": mcp_tool_name,
-            "mcp_tool_args": mcp_tool_args
-        }
+            "mcp_tool_args": mcp_tool_args,
+        },
     )
 
     return job.id
@@ -216,8 +215,8 @@ def schedule_tool_call_once_at_date(
         kwargs={
             "mcp_endpoint": mcp_endpoint,
             "mcp_tool_name": mcp_tool_name,
-            "mcp_tool_args": mcp_tool_args
-        }
+            "mcp_tool_args": mcp_tool_args,
+        },
     )
 
     return job.id
