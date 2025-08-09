@@ -1,40 +1,48 @@
 # aspscheduler-mcp-server
 
-MCP (Model Context Protocol) HTTP server implementation for the [apscheduler](https://github.com/agronholm/apscheduler)
+MCP (Model Context Protocol) HTTP server implementation for the [apscheduler](https://github.com/agronholm/apscheduler).
 
-## Install
+## Installation
 
-### Env variables / .env file
+### Environment Variables / .env File
 
-Setup environment variables or configure the `.env` file from the `.env.example`
+Set up environment variables or configure the `.env` file using the `.env.example` as a template.
 
 ## Development
 
 ### Setup
 
-1. Clone repo
+1. Clone the repository.
 2. Install development dependencies:
-`uv sync --dev`
-3. Create `.env` from `.env.example`
+   ```
+   uv sync --dev
+   ```
+3. Create a `.env` file from `.env.example`.
 
-### Running MCP service
+### Running the MCP Service
 
+To start the MCP service, run:
 ```
 uv run src/main.py
 ```
 
-### Running linters
+### Running Tests
 
-The project uses the `ruff` tool as a linter.
+To run the test suite, use:
+```
+uv run --dev pytest
+```
 
-The following command allows to run linter
+### Running Linters
 
+This project uses the `ruff` tool as a linter.
+
+To check code style and linting issues, run:
 ```
 uv run ruff check
 ```
 
-and this command allow to fix formatting
-
+To automatically fix formatting issues, run:
 ```
 uv run ruff format
 ```
