@@ -1,8 +1,12 @@
+import logging
 from typing import Dict, Any
 
 import mcp
 
 from fastmcp.client import Client
+
+
+logger = logging.getLogger(__name__)
 
 
 async def call_tool(
@@ -14,7 +18,10 @@ async def call_tool(
     mcp_tool_name: name of the tool to call
     mcp_tool_args: arguments to pass to the tool
     """
+    logger.info(f"Calling tool {mcp_tool_name} at {mcp_endpoint} with args: {mcp_tool_args}")
     client = Client(f"{mcp_endpoint}/mcp/")
 
     async with client:
-        return await client.call_tool_mcp(mcp_tool_name, mcp_tool_args)
+        result = await client.call_tool_mcp(mcp_tool_name, mcp_tool_args)
+        logger.info(f"Tool {mcp_tool_name} called with result: {result}")
+        return result

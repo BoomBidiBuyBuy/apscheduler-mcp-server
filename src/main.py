@@ -40,6 +40,7 @@ def remove_scheduled_job(job_id: str):
     Returns:
         "Job removed"
     """
+    logger.info(f"Removing job {job_id}")
     scheduler.remove_job(job_id)
     return "Job removed"
 
@@ -109,6 +110,7 @@ def schedule_tool_call_by_cron(
     if timezone is not None:
         cron_params["timezone"] = timezone
 
+    logger.info(f"Scheduling job by cron with params: {cron_params}")
     job = scheduler.add_job(
         mcp_client.call_tool,
         "cron",
@@ -119,7 +121,7 @@ def schedule_tool_call_by_cron(
             "mcp_tool_args": mcp_tool_args,
         },
     )
-
+    logger.info(f"Scheduled job {job.id}")
     return job.id
 
 
@@ -176,6 +178,7 @@ def schedule_tool_call_at_interval(
     if timezone is not None:
         interval_params["timezone"] = timezone
 
+    logger.info(f"Scheduling job by interval with params: {interval_params}")
     job = scheduler.add_job(
         mcp_client.call_tool,
         "interval",
@@ -186,6 +189,8 @@ def schedule_tool_call_at_interval(
             "mcp_tool_args": mcp_tool_args,
         },
     )
+
+    logger.info(f"Scheduled job {job.id}")
 
     return job.id
 
@@ -209,6 +214,8 @@ def schedule_tool_call_once_at_date(
     Returns:
         The job id of the scheduled job
     """
+    
+    logger.info(f"Scheduling job by date with params: {run_date}")
     job = scheduler.add_job(
         mcp_client.call_tool,
         "date",
@@ -219,7 +226,7 @@ def schedule_tool_call_once_at_date(
             "mcp_tool_args": mcp_tool_args,
         },
     )
-
+    logger.info(f"Scheduled job {job.id}")
     return job.id
 
 
