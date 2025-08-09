@@ -28,21 +28,20 @@ mcp = FastMCP(
 
 scheduler = AsyncIOScheduler()
 
-"""
+
 @mcp.tool
 def schedule_tool_call_by_cron(
     mcp_endpoint: str,
     tool_name: str,
     tool_args: Dict[str, Any],
 ):
+
  
 @mcp.tool
 def schedule_tool_call_at_interval(
     mcp_endpoint: str,
     tool_name: str,
     tool_args: Dict[str, Any],
-    trigger: str,
-    run_date: datetime = None,
     weeks: int = None,
     days: int = None,
     hours: int = None,
@@ -52,9 +51,19 @@ def schedule_tool_call_at_interval(
     end_date: datetime = None,
     timezone: str = None
 ):
+    """
+    Schedule remote MCP call on specified intervals, starting on `start_date` if specified,
+    `datetime.now()` + interval otherwise.
+    """
+
+    params = {}
+    if weeks:
+        params["weeks"] = weeks 
+
+
     scheduler.add_job(
         client.call_tool,
-        "date",
+        "interval",
         run_date=datetime.strptime(run_date, "%Y-%m-%d %H:%M:%S"),
         kwargs={
             "mcp_endpoint": mcp_endpoint,
@@ -62,14 +71,13 @@ def schedule_tool_call_at_interval(
             "params": params
         }
     )
-"""
 
  
 @mcp.tool
 def schedule_tool_call_once_at_date(
     mcp_endpoint: str,
-    tool_name: str,
-    tool_args: Dict[str, Any],
+    mcp_tool_name: str,
+    mcp_tool_args: Dict[str, Any],
     run_date: str,
 ):
     """
@@ -77,8 +85,8 @@ def schedule_tool_call_once_at_date(
 
     Args:
         mcp_endpoint: endpoint in http://<ip>:<port> format
-        tool_name: mcp tool name to call
-        tool_args: arguments to pass to the tool
+        mcp_tool_name: mcp tool name to call
+        mcp_tool_args: arguments to pass to the tool
         run_date: the date/time to run the job at in "%Y-%m-%d %H:%M:%S" format
     """
     scheduler.add_job(
@@ -87,8 +95,8 @@ def schedule_tool_call_once_at_date(
         run_date=datetime.strptime(run_date, "%Y-%m-%d %H:%M:%S"),
         kwargs={
             "mcp_endpoint": mcp_endpoint,
-            "tool_name": tool_name,
-            "params": params
+            "tool_name": mcp_tool_name,
+            "params": mcp_tool_args
         }
     )
 
