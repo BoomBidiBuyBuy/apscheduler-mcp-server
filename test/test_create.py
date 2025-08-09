@@ -3,7 +3,6 @@ from datetime import datetime
 from fastmcp import Client
 from unittest.mock import ANY
 
-import src.mcp_client as mcp_client
 from src.main import mcp_server
 
 
