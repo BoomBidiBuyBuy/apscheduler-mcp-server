@@ -18,7 +18,9 @@ async def call_tool(
     mcp_tool_name: name of the tool to call
     mcp_tool_args: arguments to pass to the tool
     """
-    logger.info(f"Calling tool {mcp_tool_name} at {mcp_endpoint} with args: {mcp_tool_args}")
+    logger.info(
+        f"Calling tool {mcp_tool_name} at {mcp_endpoint} with args: {mcp_tool_args}"
+    )
     client = Client(f"{mcp_endpoint}/mcp/")
 
     async with client:

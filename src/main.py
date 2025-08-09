@@ -214,7 +214,7 @@ def schedule_tool_call_once_at_date(
     Returns:
         The job id of the scheduled job
     """
-    
+
     logger.info(f"Scheduling job by date with params: {run_date}")
     job = scheduler.add_job(
         mcp_client.call_tool,
