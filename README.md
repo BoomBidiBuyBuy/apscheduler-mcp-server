@@ -19,6 +19,17 @@ Set up environment variables or configure the `.env` file using the `.env.exampl
    ```
 3. Create a `.env` file from `.env.example`.
 
+### Pre-commit Hooks
+
+This project uses [pre-commit](https://pre-commit.com/) to automatically check code style with `ruff` before each commit.
+
+To set up pre-commit hooks, run:
+```
+uv run pre-commit install
+```
+
+This will ensure that `ruff` checks are run automatically before every commit.
+
 ### Running the MCP Service
 
 To start the MCP service, run:
