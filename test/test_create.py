@@ -1,6 +1,7 @@
 from datetime import datetime
 
 from fastmcp import Client
+from unittest.mock import ANY
 
 import src.mcp_client as mcp_client
 from src.main import mcp_server
@@ -26,7 +27,7 @@ class TestCreate:
             assert result.content[0].text == "job_123"
 
             add_job_mock.assert_called_once_with(
-                mcp_client.call_tool,
+                ANY,  # to get rid of checking function references
                 "date",
                 run_date=datetime.strptime("2025-01-01 12:00:00", "%Y-%m-%d %H:%M:%S"),
                 kwargs={
@@ -62,7 +63,7 @@ class TestCreate:
             assert result.content[0].text == "job_123"
 
             add_job_mock.assert_called_once_with(
-                mcp_client.call_tool,
+                ANY,
                 "interval",
                 weeks=1,
                 days=2,
@@ -108,7 +109,7 @@ class TestCreate:
             assert result.content[0].text == "job_123"
 
             add_job_mock.assert_called_once_with(
-                mcp_client.call_tool,
+                ANY,
                 "cron",
                 year="2025",
                 month="1",

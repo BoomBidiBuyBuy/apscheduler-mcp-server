@@ -6,14 +6,15 @@ from typing import Dict, Any
 from fastmcp import FastMCP
 import logging
 
-import src.envs as envs
-import src.mcp_client as mcp_client
+
+import envs
+import mcp_client
 
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 
 # In a real app, you might configure this in your main entry point
 logging.basicConfig(
-    level=logging.DEBUG, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+    level=logging.INFO, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
 )
 
 # Get a logger for the module where the client is used
