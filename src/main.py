@@ -1,7 +1,8 @@
 import asyncio
 
+import pprint
 from datetime import datetime
-from typing import Dict, Any
+from typing import Dict, Any, Annotated
 
 from fastmcp import FastMCP
 import logging
@@ -30,18 +31,37 @@ scheduler = AsyncIOScheduler()
 
 
 @mcp_server.tool
-def remove_scheduled_job(job_id: str):
+def list_scheduled_jobs() -> Annotated[str, "JSON-formatted list of scheduled jobs"]:
+    """
+    List all scheduled jobs.
+    """
+    try:
+        jobs = scheduler.get_jobs()
+        # no need to print the `func` because they all call the same -- MCP tool
+        result = {
+            job.id: {"name": job.name, "args:": job.args, "kwargs": job.kwargs}
+            for job in jobs
+        }
+        return pprint.pformat(result)
+    except Exception as e:
+        logger.error(f"Error listing scheduled jobs: {e}")
+        return f"Error listing scheduled jobs: {e}"
+
+
+@mcp_server.tool
+def remove_scheduled_job(job_id: Annotated[str, "The id of the job to remove"]):
     """
     Remove a scheduled job by its id.
-
-    Args:
-        job_id: the id of the job to remove
-
-    Returns:
-        "Job removed"
     """
     logger.info(f"Removing job {job_id}")
-    scheduler.remove_job(job_id)
+    try:
+        scheduler.remove_job(job_id)
+    except KeyError:
+        logger.error(f"Job {job_id} not found")
+        return f"Job {job_id} not found"
+    except Exception as e:
+        logger.error(f"Error removing job {job_id}: {e}")
+        return f"Error removing job {job_id}: {e}"
     return "Job removed"
 
 
@@ -50,40 +70,21 @@ def schedule_tool_call_by_cron(
     mcp_endpoint: str,
     mcp_tool_name: str,
     mcp_tool_args: Dict[str, Any],
-    year: str = None,
-    month: str = None,
-    day: str = None,
-    week: str = None,
-    day_of_week: str = None,
-    hour: str = None,
-    minute: str = None,
-    second: str = None,
-    start_date: str = None,
-    end_date: str = None,
-    timezone: str = None,
-) -> str:
+    year: Annotated[str, "Year to schedule the job at"] = None,
+    month: Annotated[str, "Month to schedule the job at"] = None,
+    day: Annotated[str, "Day to schedule the job at"] = None,
+    week: Annotated[str, "Week to schedule the job at"] = None,
+    day_of_week: Annotated[str, "Day of week to schedule the job at"] = None,
+    hour: Annotated[str, "Hour to schedule the job at"] = None,
+    minute: Annotated[str, "Minute to schedule the job at"] = None,
+    second: Annotated[str, "Second to schedule the job at"] = None,
+    start_date: Annotated[str, "Start date to schedule the job at"] = None,
+    end_date: Annotated[str, "End date to schedule the job at"] = None,
+    timezone: Annotated[str, "Timezone to schedule the job at"] = None,
+) -> Annotated[str, "Job id of the scheduled job"]:
     """
     Triggers when current time matches all specified time constraints,
     similarly to how the UNIX cron scheduler works.
-
-    Args:
-        mcp_endpoint: endpoint in http://<ip>:<port> format
-        mcp_tool_name: mcp tool name to call
-        mcp_tool_args: arguments to pass to the tool
-        year: year to schedule the job at
-        month: month to schedule the job at
-        day: day to schedule the job at
-        week: week to schedule the job at
-        day_of_week: day of week to schedule the job at
-        hour: hour to schedule the job at
-        minute: minute to schedule the job at
-        second: second to schedule the job at
-        start_date: the date/time to start the job at in "%Y-%m-%d" format
-        end_date: the date/time to end the job at in "%Y-%m-%d" format
-        timezone: the timezone to use for the job
-
-    Returns:
-        The job id of the scheduled job
     """
 
     cron_params = {}
@@ -111,53 +112,45 @@ def schedule_tool_call_by_cron(
         cron_params["timezone"] = timezone
 
     logger.info(f"Scheduling job by cron with params: {cron_params}")
-    job = scheduler.add_job(
-        mcp_client.call_tool,
-        "cron",
-        **cron_params,
-        kwargs={
-            "mcp_endpoint": mcp_endpoint,
-            "mcp_tool_name": mcp_tool_name,
-            "mcp_tool_args": mcp_tool_args,
-        },
-    )
-    logger.info(f"Scheduled job {job.id}")
-    return job.id
+    try:
+        job = scheduler.add_job(
+            mcp_client.call_tool,
+            "cron",
+            **cron_params,
+            kwargs={
+                "mcp_endpoint": mcp_endpoint,
+                "mcp_tool_name": mcp_tool_name,
+                "mcp_tool_args": mcp_tool_args,
+            },
+        )
+        logger.info(f"Scheduled job {job.id}")
+        return job.id
+    except Exception as e:
+        logger.error(f"Error scheduling job by cron: {e}")
+        return f"Error scheduling job by cron: {e}"
 
 
 @mcp_server.tool
 def schedule_tool_call_at_interval(
-    mcp_endpoint: str,
-    mcp_tool_name: str,
-    mcp_tool_args: Dict[str, Any],
-    weeks: int = None,
-    days: int = None,
-    hours: int = None,
-    minutes: int = None,
-    seconds: int = None,
-    start_date: str = None,
-    end_date: str = None,
-    timezone: str = None,
-) -> str:
+    mcp_endpoint: Annotated[str, "Endpoint in http://<ip>:<port> format"],
+    mcp_tool_name: Annotated[str, "MCP tool name to call"],
+    mcp_tool_args: Annotated[Dict[str, Any], "Arguments to pass to the tool"],
+    weeks: Annotated[int, "Number of weeks to wait"] = None,
+    days: Annotated[int, "Number of days to wait"] = None,
+    hours: Annotated[int, "Number of hours to wait"] = None,
+    minutes: Annotated[int, "Number of minutes to wait"] = None,
+    seconds: Annotated[int, "Number of seconds to wait"] = None,
+    start_date: Annotated[
+        str, "The date/time to start the job at in %Y-%m-%d format"
+    ] = None,
+    end_date: Annotated[
+        str, "The date/time to end the job at in %Y-%m-%d format"
+    ] = None,
+    timezone: Annotated[str, "The timezone to use for the job"] = None,
+) -> Annotated[str, "Job id of the scheduled job"]:
     """
     Schedule remote MCP call on specified intervals, starting on `start_date` if specified,
     `datetime.now()` + interval otherwise.
-
-    Args:
-        mcp_endpoint: endpoint in http://<ip>:<port> format
-        mcp_tool_name: mcp tool name to call
-        mcp_tool_args: arguments to pass to the tool
-        weeks: number of weeks to wait
-        days: number of days to wait
-        hours: number of hours to wait
-        minutes: number of minutes to wait
-        seconds: number of seconds to wait
-        start_date: the date/time to start the job at in "%Y-%m-%d" format
-        end_date: the date/time to end the job at in "%Y-%m-%d" format
-        timezone: the timezone to use for the job
-
-    Returns:
-        The job id of the scheduled job
     """
 
     interval_params = {}
@@ -179,59 +172,60 @@ def schedule_tool_call_at_interval(
         interval_params["timezone"] = timezone
 
     logger.info(f"Scheduling job by interval with params: {interval_params}")
-    job = scheduler.add_job(
-        mcp_client.call_tool,
-        "interval",
-        **interval_params,
-        kwargs={
-            "mcp_endpoint": mcp_endpoint,
-            "mcp_tool_name": mcp_tool_name,
-            "mcp_tool_args": mcp_tool_args,
-        },
-    )
-
-    logger.info(f"Scheduled job {job.id}")
-
-    return job.id
+    try:
+        job = scheduler.add_job(
+            mcp_client.call_tool,
+            "interval",
+            **interval_params,
+            kwargs={
+                "mcp_endpoint": mcp_endpoint,
+                "mcp_tool_name": mcp_tool_name,
+                "mcp_tool_args": mcp_tool_args,
+            },
+        )
+        logger.info(f"Scheduled job {job.id}")
+        return job.id
+    except Exception as e:
+        logger.error(f"Error scheduling job by interval: {e}")
+        return f"Error scheduling job by interval: {e}"
 
 
 @mcp_server.tool
 def schedule_tool_call_once_at_date(
-    mcp_endpoint: str,
-    mcp_tool_name: str,
-    mcp_tool_args: Dict[str, Any],
-    run_date: str,
-) -> str:
+    mcp_endpoint: Annotated[str, "Endpoint in http://<ip>:<port> format"],
+    mcp_tool_name: Annotated[str, "MCP tool name to call"],
+    mcp_tool_args: Annotated[Dict[str, Any], "Arguments to pass to the tool"],
+    run_date: Annotated[
+        str, "The date/time to run the job at in %Y-%m-%d %H:%M:%S format"
+    ],
+) -> Annotated[str, "Job id of the scheduled job"]:
     """
     Schedule remote MCP call once at a certain point of time.
-
-    Args:
-        mcp_endpoint: endpoint in http://<ip>:<port> format
-        mcp_tool_name: mcp tool name to call
-        mcp_tool_args: arguments to pass to the tool
-        run_date: the date/time to run the job at in "%Y-%m-%d %H:%M:%S" format
-
-    Returns:
-        The job id of the scheduled job
     """
 
     logger.info(f"Scheduling job by date with params: {run_date}")
-    job = scheduler.add_job(
-        mcp_client.call_tool,
-        "date",
-        run_date=datetime.strptime(run_date, "%Y-%m-%d %H:%M:%S"),
-        kwargs={
-            "mcp_endpoint": mcp_endpoint,
-            "mcp_tool_name": mcp_tool_name,
-            "mcp_tool_args": mcp_tool_args,
-        },
-    )
-    logger.info(f"Scheduled job {job.id}")
-    return job.id
+    try:
+        job = scheduler.add_job(
+            mcp_client.call_tool,
+            "date",
+            run_date=datetime.strptime(run_date, "%Y-%m-%d %H:%M:%S"),
+            kwargs={
+                "mcp_endpoint": mcp_endpoint,
+                "mcp_tool_name": mcp_tool_name,
+                "mcp_tool_args": mcp_tool_args,
+            },
+        )
+        logger.info(f"Scheduled job {job.id}")
+        return job.id
+    except Exception as e:
+        logger.error(f"Error scheduling job by date: {e}")
+        return f"Error scheduling job by date: {e}"
 
 
 @mcp_server.tool
-def current_datetime():
+def current_datetime() -> Annotated[
+    str, "Current date and time with timezone in format %Y/%m/%d %H:%M:%S %Z%z"
+]:
     """Returns current date and time with timezone in format %Y/%m/%d %H:%M:%S %Z%z"""
     datetime_now = datetime.now()
     return datetime_now.strftime("%Y/%m/%d %H:%M:%S %Z%z")
