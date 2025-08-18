@@ -2,6 +2,88 @@
 
 MCP (Model Context Protocol) HTTP server implementation for the [apscheduler](https://github.com/agronholm/apscheduler).
 
+## Example / Events flow / scenario (Pizza Friday)
+
+- **Context**: An agent is connected to this scheduler MCP service and to other MCP services:
+  - **Pizza ordering MCP**: tool `order_pizza(type-of-pizza, "time to delivery today")`
+  - **Email MCP**: tool `send_email(email, message)` to invite colleagues
+  - **Bamboo MCP**: tool to retrieve birthdays, e.g. `get_birthdays(window)` where `window` can be `last_week`
+
+- **User request to the agent**: "Every Friday, schedule a pizza order for delivery at 5:00 PM, and schedule an email at 4:45 PM inviting colleagues to Pizza Friday. Include in the invitation the people who had birthdays last week."
+
+- **Agent behavior**:
+  - Retrieves available MCP service endpoints and their tools
+  - Builds an execution plan
+  - Calls one of the scheduling tools in this service with the plan in JSON
+
+- **Scheduler behavior**:
+  - Accepts the schedule request and stores the cron triggers
+  - When time matches, executes the plan
+
+- **LLM-based worker behavior**:
+  - A worker LLM connected to all the MCP services receives the plan at trigger time and executes each action by calling the referenced MCP tools, honoring each action's `condition` field to manage ordering and success dependencies.
+
+There are two independent schedules below: (1) a single action to order pizza at 17:00 every Friday; (2) two actions at 16:45 every Friday — first get last week's birthdays, then send the email. The second action is conditioned on the first succeeding. The message shows a common placeholder pattern to include upstream results; actual interpolation depends on the worker/agent that executes the plan.
+
+### Schedule 1: Order pizza every Friday at 17:00
+
+Tool call input to `schedule_tool_call_by_cron`:
+
+```json
+{
+  "execution_plan": {
+    "order_pizza": {
+      "mcp-service-endpoint": "http://pizza-mcp:3001",
+      "mcp-tool-name": "order_pizza",
+      "mcp-tool-arguments": {
+        "type-of-pizza": "assorted",
+        "time to delivery today": "17:00"
+      }
+    }
+  },
+  "day_of_week": "fri",
+  "hour": "17",
+  "minute": "00",
+  "timezone": "America/Los_Angeles"
+}
+```
+
+### Schedule 2: Fetch birthdays then send email every Friday at 16:45
+
+Tool call input to `schedule_tool_call_by_cron`:
+
+```json
+{
+  "execution_plan": {
+    "fetch_birthdays": {
+      "mcp-service-endpoint": "http://bamboo-mcp:3003",
+      "mcp-tool-name": "get_birthdays",
+      "mcp-tool-arguments": {
+        "window": "last_week"
+      },
+      "condition": "executes first"
+    },
+    "send_email": {
+      "mcp-service-endpoint": "http://email-mcp:3002",
+      "mcp-tool-name": "send_email",
+      "mcp-tool-arguments": {
+        "email": "team@company.com",
+        "message": "Welcome Pizza Friday in the kitchen at 4:45pm! Birthdays: ${fetch_birthdays.result.summary}"
+      },
+      "condition": "executes only if fetch_birthdays was successful"
+    }
+  },
+  "day_of_week": "fri",
+  "hour": "16",
+  "minute": "45",
+  "timezone": "America/Los_Angeles"
+}
+```
+
+Notes:
+- **Endpoints** are examples; use your actual MCP service URLs.
+- If you enable the worker strategy, the plan is forwarded to the worker MCP tool and executed there; ensure that worker supports referencing previous action outputs if you rely on placeholders in later actions.
+
 ## Installation
 
 ### Environment Variables / .env File
