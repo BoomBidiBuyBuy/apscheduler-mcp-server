@@ -80,9 +80,9 @@ Tool call input to `schedule_tool_call_by_cron`:
 }
 ```
 
-Notes:
-- **Endpoints** are examples; use your actual MCP service URLs.
-- If you enable the worker strategy, the plan is forwarded to the worker MCP tool and executed there; ensure that worker supports referencing previous action outputs if you rely on placeholders in later actions.
+> [!NOTE]
+> - **Endpoints** are examples; use your actual MCP service URLs.
+> - If you enable the worker strategy, the plan is forwarded to the worker MCP > tool and executed there; ensure that worker supports referencing previous action outputs if you rely on placeholders in later actions.
 
 ## Installation
 
