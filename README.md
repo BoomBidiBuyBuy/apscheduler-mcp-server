@@ -33,7 +33,7 @@ Tool call input to `schedule_tool_call_by_cron`:
 {
   "execution_plan": {
     "order_pizza": {
-      "mcp-service-endpoint": "http://pizza-mcp:3001",
+      "mcp-service-endpoint": "http://pizza-mcp:3001/mcp/",
       "mcp-tool-name": "order_pizza",
       "mcp-tool-arguments": {
         "type-of-pizza": "assorted",
@@ -56,7 +56,7 @@ Tool call input to `schedule_tool_call_by_cron`:
 {
   "execution_plan": {
     "fetch_birthdays": {
-      "mcp-service-endpoint": "http://bamboo-mcp:3003",
+      "mcp-service-endpoint": "http://bamboo-mcp:3003/mcp/",
       "mcp-tool-name": "get_birthdays",
       "mcp-tool-arguments": {
         "window": "last_week"
@@ -64,7 +64,7 @@ Tool call input to `schedule_tool_call_by_cron`:
       "condition": "executes first"
     },
     "send_email": {
-      "mcp-service-endpoint": "http://email-mcp:3002",
+      "mcp-service-endpoint": "http://email-mcp:3002/mcp/",
       "mcp-tool-name": "send_email",
       "mcp-tool-arguments": {
         "email": "team@company.com",
