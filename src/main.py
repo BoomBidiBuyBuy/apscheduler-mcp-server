@@ -1,12 +1,11 @@
 import asyncio
-
+import json
 import pprint
 from datetime import datetime
-from typing import Dict, Any, Annotated
+from typing import Annotated
 
 from fastmcp import FastMCP
 import logging
-
 
 import envs
 import mcp_client
@@ -30,19 +29,80 @@ mcp_server = FastMCP(
 scheduler = AsyncIOScheduler()
 
 
+PLAN_SCHEMA_ANNOTATION = (
+    "Execution plan in JSON format with the following structure: "
+    + open(envs.PLAN_SCHEMA_ANNOTATION_PATH).read()
+)
+
+
+def validate_plan(plan: Annotated[str, PLAN_SCHEMA_ANNOTATION]):
+    try:
+        json_plan = json.loads(plan)
+    except json.JSONDecodeError as e:
+        logger.error(f"Plan is not a valid JSON: {e}")
+        raise ValueError(f"Plan is not a valid JSON: {e}")
+
+    if len(json_plan) == 0:
+        logger.error("Plan is empty")
+        raise ValueError("Plan is empty")
+
+    for action_id, action in json_plan.items():
+        if "mcp-service-endpoint" not in action:
+            logger.error(
+                f"Action {action_id} is missing the mcp-service-endpoint field"
+            )
+            raise ValueError(
+                f"Action {action_id} is missing the 'mcp-service-endpoint' field"
+            )
+        if "mcp-tool-name" not in action:
+            logger.error(f"Action {action_id} is missing the mcp-tool-name field")
+            raise ValueError(f"Action {action_id} is missing the 'mcp-tool-name' field")
+
+        # optional part in case if no parameters are needed for the tool
+        # if "mcp-tool-arguments" not in action:
+        #    logger.error(f"Action {action_id} is missing the mcp-tool-arguments field")
+        #    raise ValueError(f"Action {action_id} is missing the 'mcp-tool-arguments' field")
+
+
+async def execute_plan(plan: Annotated[str, PLAN_SCHEMA_ANNOTATION]):
+    if envs.EXECUTION_STRATEGY == "sequential":
+        logger.info("Executing plan sequentially")
+        json_plan = json.loads(plan)
+
+        for action_id, action in json_plan.items():
+            logger.info(f"Executing action {action_id}")
+
+            mcp_endpoint = action["mcp-service-endpoint"]
+            mcp_tool_name = action["mcp-tool-name"]
+            mcp_tool_args = action.get("mcp-tool-arguments", {})
+
+            logger.info(
+                f"Calling tool {mcp_tool_name} at {mcp_endpoint} with args: {mcp_tool_args}"
+            )
+            await mcp_client.call_tool(mcp_endpoint, mcp_tool_name, mcp_tool_args)
+    elif envs.EXECUTION_STRATEGY == "worker":
+        logger.info("Executing plan in a worker")
+        # execute plan in a worker
+        await mcp_client.call_tool(
+            envs.WORKER_ENDPOINT, envs.WORKER_TOOL_NAME, {"execution_plan": plan}
+        )
+    else:
+        raise ValueError(
+            f"Invalid execution strategy: {envs.EXECUTION_STRATEGY}. Scheduler is misconfigured."
+        )
+
+
 @mcp_server.tool
 def list_scheduled_jobs() -> Annotated[str, "JSON-formatted list of scheduled jobs"]:
-    """
-    List all scheduled jobs.
-    """
+    """List all scheduled jobs."""
     try:
         jobs = scheduler.get_jobs()
         # no need to print the `func` because they all call the same -- MCP tool
         result = {
-            job.id: {"name": job.name, "args:": job.args, "kwargs": job.kwargs}
+            job.id: {"args:": job.args, "next_run_time": job.next_run_time}
             for job in jobs
         }
-        return pprint.pformat(result)
+        return pprint.pformat(result, indent=4)
     except Exception as e:
         logger.error(f"Error listing scheduled jobs: {e}")
         return f"Error listing scheduled jobs: {e}"
@@ -67,9 +127,7 @@ def remove_scheduled_job(job_id: Annotated[str, "The id of the job to remove"]):
 
 @mcp_server.tool
 def schedule_tool_call_by_cron(
-    mcp_endpoint: str,
-    mcp_tool_name: str,
-    mcp_tool_args: Dict[str, Any],
+    execution_plan: Annotated[str, PLAN_SCHEMA_ANNOTATION],
     year: Annotated[str, "Year to schedule the job at"] = None,
     month: Annotated[str, "Month to schedule the job at"] = None,
     day: Annotated[str, "Day to schedule the job at"] = None,
@@ -113,15 +171,9 @@ def schedule_tool_call_by_cron(
 
     logger.info(f"Scheduling job by cron with params: {cron_params}")
     try:
+        validate_plan(execution_plan)
         job = scheduler.add_job(
-            mcp_client.call_tool,
-            "cron",
-            **cron_params,
-            kwargs={
-                "mcp_endpoint": mcp_endpoint,
-                "mcp_tool_name": mcp_tool_name,
-                "mcp_tool_args": mcp_tool_args,
-            },
+            execute_plan, "cron", **cron_params, args=[execution_plan]
         )
         logger.info(f"Scheduled job {job.id}")
         return job.id
@@ -132,9 +184,7 @@ def schedule_tool_call_by_cron(
 
 @mcp_server.tool
 def schedule_tool_call_at_interval(
-    mcp_endpoint: Annotated[str, "Endpoint in http://<ip>:<port> format"],
-    mcp_tool_name: Annotated[str, "MCP tool name to call"],
-    mcp_tool_args: Annotated[Dict[str, Any], "Arguments to pass to the tool"],
+    execution_plan: Annotated[str, PLAN_SCHEMA_ANNOTATION],
     weeks: Annotated[int, "Number of weeks to wait"] = None,
     days: Annotated[int, "Number of days to wait"] = None,
     hours: Annotated[int, "Number of hours to wait"] = None,
@@ -173,15 +223,9 @@ def schedule_tool_call_at_interval(
 
     logger.info(f"Scheduling job by interval with params: {interval_params}")
     try:
+        validate_plan(execution_plan)
         job = scheduler.add_job(
-            mcp_client.call_tool,
-            "interval",
-            **interval_params,
-            kwargs={
-                "mcp_endpoint": mcp_endpoint,
-                "mcp_tool_name": mcp_tool_name,
-                "mcp_tool_args": mcp_tool_args,
-            },
+            execute_plan, "interval", **interval_params, args=[execution_plan]
         )
         logger.info(f"Scheduled job {job.id}")
         return job.id
@@ -192,9 +236,7 @@ def schedule_tool_call_at_interval(
 
 @mcp_server.tool
 def schedule_tool_call_once_at_date(
-    mcp_endpoint: Annotated[str, "Endpoint in http://<ip>:<port> format"],
-    mcp_tool_name: Annotated[str, "MCP tool name to call"],
-    mcp_tool_args: Annotated[Dict[str, Any], "Arguments to pass to the tool"],
+    execution_plan: Annotated[str, PLAN_SCHEMA_ANNOTATION],
     run_date: Annotated[
         str, "The date/time to run the job at in %Y-%m-%d %H:%M:%S format"
     ],
@@ -205,15 +247,12 @@ def schedule_tool_call_once_at_date(
 
     logger.info(f"Scheduling job by date with params: {run_date}")
     try:
+        validate_plan(execution_plan)
         job = scheduler.add_job(
-            mcp_client.call_tool,
+            execute_plan,
             "date",
             run_date=datetime.strptime(run_date, "%Y-%m-%d %H:%M:%S"),
-            kwargs={
-                "mcp_endpoint": mcp_endpoint,
-                "mcp_tool_name": mcp_tool_name,
-                "mcp_tool_args": mcp_tool_args,
-            },
+            args=[execution_plan],
         )
         logger.info(f"Scheduled job {job.id}")
         return job.id
@@ -229,6 +268,20 @@ def current_datetime() -> Annotated[
     """Returns current date and time with timezone in format %Y/%m/%d %H:%M:%S %Z%z"""
     datetime_now = datetime.now()
     return datetime_now.strftime("%Y/%m/%d %H:%M:%S %Z%z")
+
+
+@mcp_server.tool(tags=["admin"])
+def set_worker_endpoint(worker_endpoint: Annotated[str, "Worker endpoint"]):
+    """Sets the worker endpoint"""
+    envs.WORKER_ENDPOINT = worker_endpoint
+    return "Worker endpoint set"
+
+
+@mcp_server.tool(tags=["admin"])
+def set_worker_tool_name(worker_tool_name: Annotated[str, "Worker tool name"]):
+    """Sets the worker tool name"""
+    envs.WORKER_TOOL_NAME = worker_tool_name
+    return "Worker tool name set"
 
 
 async def main():
