@@ -21,7 +21,7 @@ async def call_tool(
     logger.info(
         f"Calling tool {mcp_tool_name} at {mcp_endpoint} with args: {mcp_tool_args}"
     )
-    client = Client(f"{mcp_endpoint}/mcp/")
+    client = Client(f"{mcp_endpoint}")
 
     async with client:
         result = await client.call_tool_mcp(mcp_tool_name, mcp_tool_args)
