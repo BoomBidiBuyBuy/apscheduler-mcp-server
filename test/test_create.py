@@ -214,7 +214,7 @@ class TestExecutePlan:
         )
 
         execute_plan_mock.assert_called_once_with(
-            "command:uvx:['mcp-server-reddit']", 
-            "mcp_reddit_get_frontpage_posts", 
-            {"limit": 5}
+            "command:uvx:['mcp-server-reddit']",
+            "mcp_reddit_get_frontpage_posts",
+            {"limit": 5},
         )

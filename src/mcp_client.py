@@ -27,7 +27,7 @@ async def call_tool(
     logger.info(
         f"Calling tool {mcp_tool_name} at {mcp_endpoint} with args: {mcp_tool_args}"
     )
-    
+
     # Check if it's a process-based MCP server
     if mcp_endpoint.startswith("command:"):
         return await _call_process_mcp(mcp_endpoint, mcp_tool_name, mcp_tool_args)
@@ -74,7 +74,7 @@ async def _call_process_mcp(
 ) -> mcp.types.CallToolResult:
     """Call process-based MCP server."""
     command, args = _parse_process_endpoint(mcp_endpoint)
-    
+
     logger.info(f"Executing process command: {command} with args: {args}")
 
     transport = StdioTransport(command=command, args=args)
