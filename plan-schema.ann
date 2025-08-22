@@ -8,8 +8,22 @@
         "condition": "executes first"
     },
     "unique_action_id_2": {
-        ...
+        "mcp-service-endpoint": "command:uvx:['mcp-server-reddit']",
+        "mcp-tool-name": "get_subreddit_hot_posts",
+        "mcp-tool-arguments": {
+            "subreddit_name": "python",
+            "limit": 10
+        },
         "condition": "executes only if unique_action_id_1 was successful"
+    },
+    "unique_action_id_3": {
+        "mcp-service-endpoint": "command:python:['-m', 'mcp_server_email']",
+        "mcp-tool-name": "send_email",
+        "mcp-tool-arguments": {
+            "to": "user@example.com",
+            "subject": "Daily Report",
+            "body": "Here is your daily report"
+        }
     },
     ...
 }
