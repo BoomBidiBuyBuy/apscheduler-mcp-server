@@ -149,6 +149,12 @@ class TestValidatePlan:
                 '{"action_1": {"mcp-service-endpoint": "http://localhost:8000", "mcp-tool-arguments": {"arg1": "value1"}}}'
             )
 
+    def test_validate_plan_process_mcp(self):
+        """Test validation of plan with process-based MCP server"""
+        validate_plan(
+            '{"action_1": {"mcp-service-endpoint": "command:uvx:[\'mcp-server-reddit\']", "mcp-tool-name": "mcp_reddit_get_frontpage_posts", "mcp-tool-arguments": {"limit": 5}}}'
+        )
+
 
 class TestExecutePlan:
     @pytest.mark.asyncio
@@ -196,4 +202,19 @@ class TestExecutePlan:
             {
                 "execution_plan": '{"action_1": {"mcp-service-endpoint": "http://localhost:8000", "mcp-tool-name": "test_tool", "mcp-tool-arguments": {"arg1": "value1"}}}'
             },
+        )
+
+    @pytest.mark.asyncio
+    async def test_execute_plan_process_mcp(self, mocker):
+        """Test execution of plan with process-based MCP server"""
+        execute_plan_mock = mocker.patch("mcp_client.call_tool")
+
+        await execute_plan(
+            '{"action_1": {"mcp-service-endpoint": "command:uvx:[\'mcp-server-reddit\']", "mcp-tool-name": "mcp_reddit_get_frontpage_posts", "mcp-tool-arguments": {"limit": 5}}}'
+        )
+
+        execute_plan_mock.assert_called_once_with(
+            "command:uvx:['mcp-server-reddit']",
+            "mcp_reddit_get_frontpage_posts",
+            {"limit": 5},
         )
