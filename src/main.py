@@ -36,6 +36,9 @@ PLAN_SCHEMA_ANNOTATION = (
 
 
 def validate_plan(plan: Annotated[str, PLAN_SCHEMA_ANNOTATION]):
+
+    logger.info(f"Validate plan: {plan}")
+
     try:
         json_plan = json.loads(plan)
     except json.JSONDecodeError as e:
