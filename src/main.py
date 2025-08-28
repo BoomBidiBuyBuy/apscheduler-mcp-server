@@ -87,7 +87,7 @@ async def execute_plan(plan: Annotated[str, PLAN_SCHEMA_ANNOTATION]):
         logger.info("Executing plan in a worker")
         # execute plan in a worker
         await mcp_client.call_tool(
-            envs.WORKER_ENDPOINT, envs.WORKER_TOOL_NAME, {"execution_plan": plan}
+            envs.WORKER_ENDPOINT, envs.WORKER_TOOL_NAME, {"str_json_plan": plan}
         )
     else:
         raise ValueError(
@@ -172,6 +172,9 @@ def schedule_tool_call_by_cron(
     if timezone is not None:
         cron_params["timezone"] = timezone
 
+    if len(cron_params) == 0:
+        return "Error: all schedule paramers are empty. Need to specfy cron params"
+
     logger.info(f"Scheduling job by cron with params: {cron_params}")
     try:
         validate_plan(execution_plan)
@@ -223,6 +226,9 @@ def schedule_tool_call_at_interval(
         interval_params["end_date"] = datetime.strptime(end_date, "%Y-%m-%d")
     if timezone is not None:
         interval_params["timezone"] = timezone
+
+    if len(interval_params) == 0:
+        return "Error: schedule parameters are empty, specify parameters of schedule"
 
     logger.info(f"Scheduling job by interval with params: {interval_params}")
     try:
