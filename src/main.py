@@ -36,7 +36,6 @@ PLAN_SCHEMA_ANNOTATION = (
 
 
 def validate_plan(plan: Annotated[str, PLAN_SCHEMA_ANNOTATION]):
-
     logger.info(f"Validate plan: {plan}")
 
     try:
@@ -67,7 +66,17 @@ def validate_plan(plan: Annotated[str, PLAN_SCHEMA_ANNOTATION]):
         #    raise ValueError(f"Action {action_id} is missing the 'mcp-tool-arguments' field")
 
 
-async def execute_plan(plan: Annotated[str, PLAN_SCHEMA_ANNOTATION]):
+async def execute_plan(
+    plan: Annotated[str, PLAN_SCHEMA_ANNOTATION],
+    *,
+    user_id: Annotated[str, "The id of the user who is scheduling the job"],
+    description: Annotated[str, "The description of the job"],
+):
+    """We pass user id and description even if they are not stored in the plan
+    because they are stored in the job metadata, that allows to filter jobs by user_id
+    and get description for the job."""
+    logger.info(f"Executing plan for user {user_id} with description {description}")
+
     if envs.EXECUTION_STRATEGY == "sequential":
         logger.info("Executing plan sequentially")
         json_plan = json.loads(plan)
@@ -87,7 +96,9 @@ async def execute_plan(plan: Annotated[str, PLAN_SCHEMA_ANNOTATION]):
         logger.info("Executing plan in a worker")
         # execute plan in a worker
         await mcp_client.call_tool(
-            envs.WORKER_ENDPOINT, envs.WORKER_TOOL_NAME, {"str_json_plan": plan}
+            envs.WORKER_ENDPOINT,
+            envs.WORKER_TOOL_NAME,
+            {"user_id": user_id, "str_json_plan": plan},
         )
     else:
         raise ValueError(
@@ -96,14 +107,21 @@ async def execute_plan(plan: Annotated[str, PLAN_SCHEMA_ANNOTATION]):
 
 
 @mcp_server.tool
-def list_scheduled_jobs() -> Annotated[str, "JSON-formatted list of scheduled jobs"]:
+def list_scheduled_jobs(
+    user_id: Annotated[str, "The id of the user who is listing the jobs"],
+) -> Annotated[str, "JSON-formatted list of scheduled jobs"]:
     """List all scheduled jobs."""
     try:
         jobs = scheduler.get_jobs()
         # no need to print the `func` because they all call the same -- MCP tool
         result = {
-            job.id: {"args:": job.args, "next_run_time": job.next_run_time}
+            job.id: {
+                "description": job.kwargs.get("description"),
+                "args": job.args,
+                "next_run_time": job.next_run_time,
+            }
             for job in jobs
+            if job.kwargs.get("user_id") == user_id
         }
         return pprint.pformat(result, indent=4)
     except Exception as e:
@@ -130,7 +148,9 @@ def remove_scheduled_job(job_id: Annotated[str, "The id of the job to remove"]):
 
 @mcp_server.tool
 def schedule_tool_call_by_cron(
+    user_id: Annotated[str, "The id of the user who is scheduling the job"],
     execution_plan: Annotated[str, PLAN_SCHEMA_ANNOTATION],
+    description: Annotated[str, "The brief description of the job"] = "",
     year: Annotated[str, "Year to schedule the job at"] = None,
     month: Annotated[str, "Month to schedule the job at"] = None,
     day: Annotated[str, "Day to schedule the job at"] = None,
@@ -175,11 +195,17 @@ def schedule_tool_call_by_cron(
     if len(cron_params) == 0:
         return "Error: all schedule paramers are empty. Need to specfy cron params"
 
-    logger.info(f"Scheduling job by cron with params: {cron_params}")
+    logger.info(
+        f"Scheduling job by cron with params: {cron_params}, user_id: {user_id}, description: {description}"
+    )
     try:
         validate_plan(execution_plan)
         job = scheduler.add_job(
-            execute_plan, "cron", **cron_params, args=[execution_plan]
+            execute_plan,
+            "cron",
+            **cron_params,
+            args=[execution_plan],
+            kwargs={"user_id": user_id, "description": description},
         )
         logger.info(f"Scheduled job {job.id}")
         return job.id
@@ -190,7 +216,9 @@ def schedule_tool_call_by_cron(
 
 @mcp_server.tool
 def schedule_tool_call_at_interval(
+    user_id: Annotated[str, "The id of the user who is scheduling the job"],
     execution_plan: Annotated[str, PLAN_SCHEMA_ANNOTATION],
+    description: Annotated[str, "The brief description of the job"] = "",
     weeks: Annotated[int, "Number of weeks to wait"] = None,
     days: Annotated[int, "Number of days to wait"] = None,
     hours: Annotated[int, "Number of hours to wait"] = None,
@@ -230,11 +258,17 @@ def schedule_tool_call_at_interval(
     if len(interval_params) == 0:
         return "Error: schedule parameters are empty, specify parameters of schedule"
 
-    logger.info(f"Scheduling job by interval with params: {interval_params}")
+    logger.info(
+        f"Scheduling job by interval with params: {interval_params}, user_id: {user_id}, description: {description}"
+    )
     try:
         validate_plan(execution_plan)
         job = scheduler.add_job(
-            execute_plan, "interval", **interval_params, args=[execution_plan]
+            execute_plan,
+            "interval",
+            **interval_params,
+            args=[execution_plan],
+            kwargs={"user_id": user_id, "description": description},
         )
         logger.info(f"Scheduled job {job.id}")
         return job.id
@@ -245,16 +279,20 @@ def schedule_tool_call_at_interval(
 
 @mcp_server.tool
 def schedule_tool_call_once_at_date(
+    user_id: Annotated[str, "The id of the user who is scheduling the job"],
     execution_plan: Annotated[str, PLAN_SCHEMA_ANNOTATION],
     run_date: Annotated[
         str, "The date/time to run the job at in %Y-%m-%d %H:%M:%S format"
     ],
+    description: Annotated[str, "The brief description of the job"] = "",
 ) -> Annotated[str, "Job id of the scheduled job"]:
     """
     Schedule remote MCP call once at a certain point of time.
     """
 
-    logger.info(f"Scheduling job by date with params: {run_date}")
+    logger.info(
+        f"Scheduling job by date with params: {run_date}, user_id: {user_id}, description: {description}"
+    )
     try:
         validate_plan(execution_plan)
         job = scheduler.add_job(
@@ -262,6 +300,7 @@ def schedule_tool_call_once_at_date(
             "date",
             run_date=datetime.strptime(run_date, "%Y-%m-%d %H:%M:%S"),
             args=[execution_plan],
+            kwargs={"user_id": user_id, "description": description},
         )
         logger.info(f"Scheduled job {job.id}")
         return job.id

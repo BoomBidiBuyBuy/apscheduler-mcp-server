@@ -17,6 +17,7 @@ class TestCreate:
             result = await client.call_tool(
                 "schedule_tool_call_once_at_date",
                 arguments={
+                    "user_id": "user_123",
                     "execution_plan": '{"action_1": {"mcp-service-endpoint": "http://localhost:8000", "mcp-tool-name": "test_tool", "mcp-tool-arguments": {"arg1": "value1"}}}',
                     "run_date": "2025-01-01 12:00:00",
                 },
@@ -31,6 +32,7 @@ class TestCreate:
                 args=[
                     '{"action_1": {"mcp-service-endpoint": "http://localhost:8000", "mcp-tool-name": "test_tool", "mcp-tool-arguments": {"arg1": "value1"}}}'
                 ],
+                kwargs={"user_id": "user_123", "description": ANY},
             )
 
     async def test_schedule_at_interval(self, mocker):
@@ -42,6 +44,7 @@ class TestCreate:
             result = await client.call_tool(
                 "schedule_tool_call_at_interval",
                 arguments={
+                    "user_id": "user_123",
                     "execution_plan": '{"action_1": {"mcp-service-endpoint": "http://localhost:8000", "mcp-tool-name": "test_tool", "mcp-tool-arguments": {"arg1": "value1"}}}',
                     "weeks": 1,
                     "days": 2,
@@ -70,6 +73,7 @@ class TestCreate:
                 args=[
                     '{"action_1": {"mcp-service-endpoint": "http://localhost:8000", "mcp-tool-name": "test_tool", "mcp-tool-arguments": {"arg1": "value1"}}}'
                 ],
+                kwargs={"user_id": "user_123", "description": ANY},
             )
 
     async def test_schedule_by_cron(self, mocker):
@@ -81,6 +85,7 @@ class TestCreate:
             result = await client.call_tool(
                 "schedule_tool_call_by_cron",
                 arguments={
+                    "user_id": "user_123",
                     "execution_plan": '{"action_1": {"mcp-service-endpoint": "http://localhost:8000", "mcp-tool-name": "test_tool", "mcp-tool-arguments": {"arg1": "value1"}}}',
                     "year": "2025",
                     "month": "1",
@@ -115,6 +120,7 @@ class TestCreate:
                 args=[
                     '{"action_1": {"mcp-service-endpoint": "http://localhost:8000", "mcp-tool-name": "test_tool", "mcp-tool-arguments": {"arg1": "value1"}}}'
                 ],
+                kwargs={"user_id": "user_123", "description": ANY},
             )
 
 
@@ -162,7 +168,9 @@ class TestExecutePlan:
         execute_plan_mock = mocker.patch("mcp_client.call_tool")
 
         await execute_plan(
-            '{"action_1": {"mcp-service-endpoint": "http://localhost:8000", "mcp-tool-name": "test_tool", "mcp-tool-arguments": {"arg1": "value1"}}}'
+            '{"action_1": {"mcp-service-endpoint": "http://localhost:8000", "mcp-tool-name": "test_tool", "mcp-tool-arguments": {"arg1": "value1"}}}',
+            user_id="user_123",
+            description="test_description",
         )
 
         execute_plan_mock.assert_called_once_with(
@@ -174,7 +182,9 @@ class TestExecutePlan:
         execute_plan_mock = mocker.patch("mcp_client.call_tool")
 
         await execute_plan(
-            '{"action_1": {"mcp-service-endpoint": "http://localhost:8000", "mcp-tool-name": "test_tool", "mcp-tool-arguments": {"arg1": "value1"}}, "action_2": {"mcp-service-endpoint": "http://localhost:8001", "mcp-tool-name": "test_tool_2", "mcp-tool-arguments": {"arg2": "value2"}}}'
+            '{"action_1": {"mcp-service-endpoint": "http://localhost:8000", "mcp-tool-name": "test_tool", "mcp-tool-arguments": {"arg1": "value1"}}, "action_2": {"mcp-service-endpoint": "http://localhost:8001", "mcp-tool-name": "test_tool_2", "mcp-tool-arguments": {"arg2": "value2"}}}',
+            user_id="user_123",
+            description="test_description",
         )
 
         execute_plan_mock.assert_has_calls(
@@ -193,14 +203,17 @@ class TestExecutePlan:
         execute_plan_mock = mocker.patch("mcp_client.call_tool")
 
         await execute_plan(
-            '{"action_1": {"mcp-service-endpoint": "http://localhost:8000", "mcp-tool-name": "test_tool", "mcp-tool-arguments": {"arg1": "value1"}}}'
+            '{"action_1": {"mcp-service-endpoint": "http://localhost:8000", "mcp-tool-name": "test_tool", "mcp-tool-arguments": {"arg1": "value1"}}}',
+            user_id="user_123",
+            description="test_description",
         )
 
         execute_plan_mock.assert_called_once_with(
             "http://localhost:8000",
             "worker_tool",
             {
-                "execution_plan": '{"action_1": {"mcp-service-endpoint": "http://localhost:8000", "mcp-tool-name": "test_tool", "mcp-tool-arguments": {"arg1": "value1"}}}'
+                "str_json_plan": '{"action_1": {"mcp-service-endpoint": "http://localhost:8000", "mcp-tool-name": "test_tool", "mcp-tool-arguments": {"arg1": "value1"}}}',
+                "user_id": "user_123",
             },
         )
 
@@ -210,7 +223,9 @@ class TestExecutePlan:
         execute_plan_mock = mocker.patch("mcp_client.call_tool")
 
         await execute_plan(
-            '{"action_1": {"mcp-service-endpoint": "command:uvx:[\'mcp-server-reddit\']", "mcp-tool-name": "mcp_reddit_get_frontpage_posts", "mcp-tool-arguments": {"limit": 5}}}'
+            '{"action_1": {"mcp-service-endpoint": "command:uvx:[\'mcp-server-reddit\']", "mcp-tool-name": "mcp_reddit_get_frontpage_posts", "mcp-tool-arguments": {"limit": 5}}}',
+            user_id="user_123",
+            description="test_description",
         )
 
         execute_plan_mock.assert_called_once_with(
