@@ -2,6 +2,17 @@
 
 MCP (Model Context Protocol) HTTP server implementation for the [apscheduler](https://github.com/agronholm/apscheduler).
 
+## Persistence
+
+The scheduler now supports persistent storage using SQLAlchemy jobstore. Scheduled jobs are stored in the database and survive service restarts.
+
+- **Development**: Uses SQLite database (`dev.db`)
+- **Production**: Uses PostgreSQL database (`telegram_bot`)
+
+Configure via environment variables:
+- `STORAGE_DB`: Set to `sqlite` for development or `postgres` for production
+- PostgreSQL settings: `PG_USER`, `PG_PASSWORD`, `PG_HOST`, `PG_PORT`
+
 ## Example / Events flow / scenario (Pizza Friday)
 
 - **Context**: An agent is connected to this scheduler MCP service and to other MCP services:
