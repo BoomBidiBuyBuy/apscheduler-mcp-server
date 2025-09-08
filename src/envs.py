@@ -2,6 +2,12 @@ import os
 
 from fastmcp import settings
 
+STORAGE_DB = os.environ.get("STORAGE_DB", "sqlite-memory")
+
+PG_USER = os.environ.get("PG_USER")
+PG_PASSWORD = os.environ.get("PG_PASSWORD")
+PG_HOST = os.environ.get("PG_HOST")
+PG_PORT = os.environ.get("PG_PORT")
 
 MCP_HOST = os.environ.get("MCP_HOST", settings.host)
 MCP_PORT = int(os.environ.get("MCP_PORT", settings.port))
