@@ -9,6 +9,7 @@ import logging
 
 import envs
 import mcp_client
+import storage
 
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 
@@ -26,7 +27,7 @@ mcp_server = FastMCP(
 )
 
 
-scheduler = AsyncIOScheduler()
+scheduler = AsyncIOScheduler(jobstores=storage.get_scheduler_jobstore())
 
 
 PLAN_SCHEMA_ANNOTATION = (
